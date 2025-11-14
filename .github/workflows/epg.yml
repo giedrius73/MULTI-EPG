@@ -1,32 +1,43 @@
-name: Generate and Upload EPG
+name: Generate and Update EPG
 
 on:
   schedule:
-    - cron: "0 */12 * * *"   # kas 12 valandų
-  workflow_dispatch:          # leidžia paleisti ranka
+    - cron: "0 */12 * * *"   # kas 12 valandų UTC
+  workflow_dispatch:         # leidžia paleisti rankiniu būdu
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
       - name: Install dependencies
-        run: pip install requests lxml pytz
+        run: |
+          pip install requests lxml pytz
 
-      - name: Generate EPG
-        run: python merge_epg.py
+      - name: Merge EPG sources
+        run: |
+          python merge_epg.py
 
-      - name: Upload to Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload EPG artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v1.0
+          name: epg.xml.gz
+          path: epg.xml.gz
+
+      - name: Create Release with EPG
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "latest"
+          name: "Automatinis EPG"
+          body: "Sugeneruotas EPG failas iš kelių šaltinių"
           files: epg.xml.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
