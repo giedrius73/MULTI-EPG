@@ -1,0 +1,32 @@
+name: Generate and Upload EPG
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"   # kas 12 valandų
+  workflow_dispatch:          # leidžia paleisti ranka
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install requests lxml pytz
+
+      - name: Generate EPG
+        run: python merge_epg.py
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0
+          files: epg.xml.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
