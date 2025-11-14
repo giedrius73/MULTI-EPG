@@ -35,9 +35,10 @@ jobs:
       - name: Create Release with EPG
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "latest"
+          tag_name: latest
           name: "Automatinis EPG"
           body: "Sugeneruotas EPG failas iš kelių šaltinių"
           files: epg.xml.gz
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
