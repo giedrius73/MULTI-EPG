@@ -1,0 +1,4 @@
+https://ip-tv.dev/epg/epg.xml.gz
+https://iptvx.one/EPG
+http://epg.it999.ru/edem.xml.gz
+http://epg.online/epg.xml.gz
