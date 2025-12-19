@@ -33,18 +33,36 @@ def pick_lang(elements):
     return elements[0]
 
 def normalize_time(timestr):
-    # XMLTV laikas pvz: 20251114060000 +0000
-    dt = datetime.strptime(timestr[:14], "%Y%m%d%H%M%S")
-    tz_offset = timestr[15:]
+    # Jeigu laikas tuscias arba per trumpas – ignoruojam
+    if not timestr or len(timestr) < 14:
+        return None
+
+    # Bandome parse'inti data
+    try:
+        dt = datetime.strptime(timestr[:14], "%Y%m%d%H%M%S")
+    except Exception:
+        return None
+
+    # Tvarkome laiko juosta, jei yra
+    tz_offset = None
+    if len(timestr) >= 20:
+        tz_offset = timestr[15:]
+
     if tz_offset:
-        sign = 1 if tz_offset[0] == "+" else -1
-        hours = int(tz_offset[1:3])
-        minutes = int(tz_offset[3:5])
-        dt = dt.replace(tzinfo=pytz.FixedOffset(sign*(hours*60+minutes)))
+        try:
+            sign = 1 if tz_offset[0] == "+" else -1
+            hours = int(tz_offset[1:3])
+            minutes = int(tz_offset[3:5])
+            dt = dt.replace(tzinfo=pytz.FixedOffset(sign * (hours * 60 + minutes)))
+        except Exception:
+            dt = dt.replace(tzinfo=pytz.UTC)
     else:
         dt = dt.replace(tzinfo=pytz.UTC)
+
+    # Konvertuojame į Vilniaus laiką
     vilnius = pytz.timezone("Europe/Vilnius")
     dt_vilnius = dt.astimezone(vilnius)
+
     return dt_vilnius.strftime("%Y%m%d%H%M%S %z")
 
 def merge_sources(sources):
