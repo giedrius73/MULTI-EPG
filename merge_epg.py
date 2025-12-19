@@ -12,13 +12,17 @@ def load_sources(path="sources.txt"):
 
 def fetch_xml(url):
     print(f"Downloading: {url}")
-    r = requests.get(url, timeout=60)
-    r.raise_for_status()
-    content = r.content
-    # jei failas gz, išpakuojam
-    if url.endswith(".gz") or content[:2] == b"\x1f\x8b":
-        content = gzip.GzipFile(fileobj=BytesIO(content)).read()
-    return etree.fromstring(content)
+    try:
+        r = requests.get(url, timeout=60)
+        r.raise_for_status()
+        content = r.content
+        # jei failas gz, išpakuojam
+        if url.endswith(".gz") or content[:2] == b"\x1f\x8b":
+            content = gzip.GzipFile(fileobj=BytesIO(content)).read()
+        return etree.fromstring(content)
+    except Exception as e:
+        print(f"Failed to download {url}: {e}")
+        return None
 
 def pick_lang(elements):
     if not elements:
@@ -71,29 +75,40 @@ def merge_sources(sources):
     programme_index = {}
 
     for url in sources:
-        try:
-            doc = fetch_xml(url)
-        except Exception as e:
-            print(f"Failed to download {url}: {e}")
+        doc = fetch_xml(url)
+        if doc is None:
             continue
+
         for ch in doc.findall("channel"):
             ch_id = ch.get("id")
-            if ch_id not in channel_index:
+            if ch_id and ch_id not in channel_index:
                 channel_index[ch_id] = ch
+
         for p in doc.findall("programme"):
             ch_id = p.get("channel")
+            if not ch_id:
+                continue
+
             start = normalize_time(p.get("start"))
             stop = normalize_time(p.get("stop"))
+
+            # Jeigu start arba stop sugadinti – praleidžiam
+            if not start or not stop:
+                continue
+
             key = (ch_id, start, stop)
             programme_index.setdefault(key, []).append(p)
 
+    # Įdedam kanalus
     for ch in channel_index.values():
         tv.append(ch)
 
+    # Įdedam programas
     for key, plist in programme_index.items():
         base = plist[0]
         base.set("start", key[1])
         base.set("stop", key[2])
+
         def set_tag(tag):
             candidates = []
             for p in plist:
@@ -103,8 +118,10 @@ def merge_sources(sources):
                 for old in base.findall(tag):
                     base.remove(old)
                 base.append(chosen)
+
         for tag in ["title", "sub-title", "desc"]:
             set_tag(tag)
+
         tv.append(base)
 
     return etree.ElementTree(tv)
