@@ -1,0 +1,28 @@
+name: Keep Repository Active
+
+on:
+  schedule:
+    - cron: "0 0 */30 * *"
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Update timestamp
+        run: |
+          date +"%Y-%m-%d %H:%M:%S" > .keepalive
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .keepalive
+          git commit -m "Keepalive: prevent workflow disable" || echo "No changes to commit"
+
+      - name: Push
+        run: |
+          git push
